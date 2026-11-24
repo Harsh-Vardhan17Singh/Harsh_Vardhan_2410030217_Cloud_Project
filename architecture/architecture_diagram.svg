@@ -1,0 +1,204 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 750" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a" />
+      <stop offset="100%" stop-color="#1e1b4b" />
+    </linearGradient>
+    <linearGradient id="cardGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1e293b" />
+      <stop offset="100%" stop-color="#0f172a" />
+    </linearGradient>
+    <linearGradient id="primaryGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#0284c7" />
+      <stop offset="100%" stop-color="#0369a1" />
+    </linearGradient>
+    <linearGradient id="cloudGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#9333ea" />
+      <stop offset="100%" stop-color="#7e22ce" />
+    </linearGradient>
+    <linearGradient id="redisGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#dc2626" />
+      <stop offset="100%" stop-color="#991b1b" />
+    </linearGradient>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#000" flood-opacity="0.4" />
+    </filter>
+    <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8" />
+    </marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#22c55e" />
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#c084fc" />
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1100" height="750" fill="url(#bgGrad)" />
+
+  <!-- Title & Header -->
+  <text x="550" y="45" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="24" font-weight="bold" fill="#f8fafc">
+    Hybrid Cloud Architecture: Containerized Visitor Counter Web App
+  </text>
+  <text x="550" y="70" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" fill="#94a3b8">
+    Flask + Redis with Horizontal Pod Autoscaler (HPA) and Active-Passive Failover Simulation
+  </text>
+
+  <!-- USER / CLIENT TRAFFIC -->
+  <g transform="translate(475, 100)" filter="url(#shadow)">
+    <rect width="150" height="50" rx="8" fill="#334155" stroke="#64748b" stroke-width="1.5" />
+    <text x="75" y="26" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="14" font-weight="bold" fill="#f8fafc">Client Users</text>
+    <text x="75" y="42" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" fill="#94a3b8">HTTP Traffic :8080</text>
+  </g>
+
+  <!-- GLOBAL TRAFFIC MANAGER / FAILOVER ROUTER -->
+  <g transform="translate(375, 180)" filter="url(#shadow)">
+    <rect width="350" height="70" rx="10" fill="#1e293b" stroke="#38bdf8" stroke-width="2" />
+    <text x="175" y="28" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold" fill="#38bdf8">
+      Global Traffic Manager / Failover Proxy
+    </text>
+    <text x="175" y="48" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#cbd5e1">
+      Active Health Probing (/healthz) &bull; Automatic Failover &bull; Nginx / Python Router
+    </text>
+  </g>
+
+  <!-- Client to GTM Line -->
+  <line x1="550" y1="150" x2="550" y2="180" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />
+
+  <!-- CLUSTER 1: PRIMARY (ON-PREMISES) -->
+  <g transform="translate(40, 280)" filter="url(#shadow)">
+    <rect width="480" height="420" rx="12" fill="url(#cardGrad)" stroke="#0284c7" stroke-width="2" />
+    <rect width="480" height="38" rx="12" fill="url(#primaryGrad)" />
+    <text x="240" y="25" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold" fill="#ffffff">
+      PRIMARY CLUSTER (On-Premises Data Center / Minikube 1)
+    </text>
+
+    <!-- NodePort Service -->
+    <rect x="140" y="55" width="200" height="36" rx="6" fill="#0369a1" stroke="#38bdf8" stroke-width="1" />
+    <text x="240" y="78" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#ffffff">
+      Service: NodePort (Port 30005)
+    </text>
+
+    <!-- HPA Component -->
+    <rect x="25" y="110" width="430" height="50" rx="8" fill="#1e293b" stroke="#eab308" stroke-width="1.5" stroke-dasharray="4 2" />
+    <text x="240" y="130" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="#facc15">
+      Horizontal Pod Autoscaler (HPA v2)
+    </text>
+    <text x="240" y="148" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" fill="#cbd5e1">
+      Metrics Target: CPU 50%, Memory 75% | Replicas: min 2, max 10
+    </text>
+
+    <!-- Web Pods Box -->
+    <rect x="25" y="180" width="430" height="110" rx="8" fill="#0f172a" stroke="#0284c7" stroke-width="1" />
+    <text x="35" y="200" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#38bdf8">Flask Web Pods (visitor-counter-web)</text>
+    
+    <!-- Individual Pods -->
+    <rect x="40" y="215" width="120" height="60" rx="6" fill="#1e293b" stroke="#38bdf8" />
+    <text x="100" y="240" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f8fafc">Pod 1 (Active)</text>
+    <text x="100" y="258" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="9" fill="#94a3b8">Req: 100m / 128Mi</text>
+
+    <rect x="180" y="215" width="120" height="60" rx="6" fill="#1e293b" stroke="#38bdf8" />
+    <text x="240" y="240" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f8fafc">Pod 2 (Active)</text>
+    <text x="240" y="258" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="9" fill="#94a3b8">Req: 100m / 128Mi</text>
+
+    <rect x="320" y="215" width="120" height="60" rx="6" fill="#1e293b" stroke="#64748b" stroke-dasharray="3 3" />
+    <text x="380" y="240" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" fill="#94a3b8">Pod 3..10 (HPA)</text>
+    <text x="380" y="258" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="9" fill="#64748b">Dynamic Burst</text>
+
+    <!-- Redis Service & Pod -->
+    <g transform="translate(140, 310)">
+      <rect width="200" height="30" rx="4" fill="#0f172a" stroke="#dc2626" />
+      <text x="100" y="20" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f87171">redis-service :6379 (ClusterIP)</text>
+    </g>
+
+    <g transform="translate(80, 355)">
+      <rect width="180" height="48" rx="6" fill="url(#redisGrad)" />
+      <text x="90" y="22" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#ffffff">Redis Deployment</text>
+      <text x="90" y="38" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="10" fill="#fecaca">In-memory Store (Stateful)</text>
+    </g>
+
+    <!-- PVC Box -->
+    <g transform="translate(280, 355)">
+      <rect width="150" height="48" rx="6" fill="#334155" stroke="#94a3b8" />
+      <text x="75" y="22" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f8fafc">PersistentVolume</text>
+      <text x="75" y="38" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="10" fill="#94a3b8">redis-pvc (1Gi RWO)</text>
+    </g>
+  </g>
+
+  <!-- CLUSTER 2: SECONDARY (PUBLIC CLOUD) -->
+  <g transform="translate(580, 280)" filter="url(#shadow)">
+    <rect width="480" height="420" rx="12" fill="url(#cardGrad)" stroke="#9333ea" stroke-width="2" />
+    <rect width="480" height="38" rx="12" fill="url(#cloudGrad)" />
+    <text x="240" y="25" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="15" font-weight="bold" fill="#ffffff">
+      SECONDARY CLUSTER (Simulated Public Cloud / Minikube 2)
+    </text>
+
+    <!-- NodePort Service -->
+    <rect x="140" y="55" width="200" height="36" rx="6" fill="#7e22ce" stroke="#c084fc" stroke-width="1" />
+    <text x="240" y="78" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#ffffff">
+      Service: NodePort (Port 30006)
+    </text>
+
+    <!-- Standby Badge -->
+    <rect x="25" y="110" width="430" height="50" rx="8" fill="#1e293b" stroke="#c084fc" stroke-width="1.5" />
+    <text x="240" y="130" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="13" font-weight="bold" fill="#c084fc">
+      Hot Standby / Cloud Bursting Node
+    </text>
+    <text x="240" y="148" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" fill="#cbd5e1">
+      Zero compute waste when idle &bull; Instantly receives traffic on failover
+    </text>
+
+    <!-- Web Pods Box -->
+    <rect x="25" y="180" width="430" height="110" rx="8" fill="#0f172a" stroke="#9333ea" stroke-width="1" />
+    <text x="35" y="200" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#c084fc">Cloud Flask Web Pods</text>
+    
+    <!-- Individual Pods -->
+    <rect x="70" y="215" width="140" height="60" rx="6" fill="#1e293b" stroke="#c084fc" />
+    <text x="140" y="240" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f8fafc">Cloud Pod 1</text>
+    <text x="140" y="258" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="9" fill="#c084fc">Spot Instance Tier</text>
+
+    <rect x="250" y="215" width="140" height="60" rx="6" fill="#1e293b" stroke="#c084fc" />
+    <text x="320" y="240" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f8fafc">Cloud Pod 2</text>
+    <text x="320" y="258" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="9" fill="#c084fc">Spot Instance Tier</text>
+
+    <!-- Redis Service & Pod -->
+    <g transform="translate(140, 310)">
+      <rect width="200" height="30" rx="4" fill="#0f172a" stroke="#dc2626" />
+      <text x="100" y="20" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f87171">redis-service :6379 (ClusterIP)</text>
+    </g>
+
+    <g transform="translate(80, 355)">
+      <rect width="180" height="48" rx="6" fill="url(#redisGrad)" />
+      <text x="90" y="22" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" font-weight="bold" fill="#ffffff">Cloud Redis Replicas</text>
+      <text x="90" y="38" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="10" fill="#fecaca">Synced / Disaster Recovery</text>
+    </g>
+
+    <g transform="translate(280, 355)">
+      <rect width="150" height="48" rx="6" fill="#334155" stroke="#94a3b8" />
+      <text x="75" y="22" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#f8fafc">Cloud Storage PVC</text>
+      <text x="75" y="38" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="10" fill="#94a3b8">Persistent Volume (1Gi)</text>
+    </g>
+  </g>
+
+  <!-- ROUTING ARROWS -->
+  <!-- Primary Route (Solid Green - Active) -->
+  <path d="M 450 250 L 280 335" fill="none" stroke="#22c55e" stroke-width="3" marker-end="url(#arrow-green)" />
+  <rect x="300" y="270" width="130" height="22" rx="4" fill="#14532d" />
+  <text x="365" y="285" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#86efac">
+    Primary Active Route
+  </text>
+
+  <!-- Secondary Route (Dashed Purple - Standby / Failover) -->
+  <path d="M 650 250 L 820 335" fill="none" stroke="#c084fc" stroke-width="3" stroke-dasharray="6 4" marker-end="url(#arrow-dashed)" />
+  <rect x="670" y="270" width="150" height="22" rx="4" fill="#581c87" />
+  <text x="745" y="285" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="11" font-weight="bold" fill="#e9d5ff">
+    Automatic Failover Route
+  </text>
+
+  <!-- Bottom Caption -->
+  <text x="550" y="728" text-anchor="middle" font-family="Segoe UI, sans-serif" font-size="12" fill="#64748b">
+    Simulated Multi-Cluster Deployment on Minikube &bull; Cost-Optimized FinOps Architecture &bull; Self-Healing &amp; Auto-Scaling
+  </text>
+</svg>
+

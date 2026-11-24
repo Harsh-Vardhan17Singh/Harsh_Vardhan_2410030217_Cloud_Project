@@ -1,0 +1,194 @@
+---
+# ConfigMap for Application Configuration
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: visitor-counter-config
+  labels:
+    app: visitor-counter
+data:
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  CLUSTER_NAME: "Primary-Cluster (On-Prem / Minikube 1)"
+  APP_ENV: "production"
+
+---
+# PersistentVolumeClaim for Redis Database State
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  labels:
+    app: visitor-counter
+    tier: database
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+
+---
+# Redis Deployment (Backend Database)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-deployment
+  labels:
+    app: visitor-counter
+    tier: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: visitor-counter
+      tier: database
+  template:
+    metadata:
+      labels:
+        app: visitor-counter
+        tier: database
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+              name: redis-port
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 150m
+              memory: 128Mi
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+          volumeMounts:
+            - name: redis-storage
+              mountPath: /data
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc
+
+---
+# Redis ClusterIP Service (Internal communication only)
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  labels:
+    app: visitor-counter
+    tier: database
+spec:
+  type: ClusterIP
+  ports:
+    - port: 6379
+      targetPort: 6379
+      name: redis
+  selector:
+    app: visitor-counter
+    tier: database
+
+---
+# Flask Web App Deployment (Frontend / API)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: visitor-counter-web
+  labels:
+    app: visitor-counter
+    tier: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: visitor-counter
+      tier: frontend
+  template:
+    metadata:
+      labels:
+        app: visitor-counter
+        tier: frontend
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - visitor-counter
+                topologyKey: "kubernetes.io/hostname"
+      containers:
+        - name: web
+          image: visitor-counter:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              name: http
+          envFrom:
+            - configMapRef:
+                name: visitor-counter-config
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 2
+
+---
+# Web Service (Exposes Web App via NodePort)
+apiVersion: v1
+kind: Service
+metadata:
+  name: visitor-counter-service
+  labels:
+    app: visitor-counter
+    tier: frontend
+spec:
+  type: NodePort
+  ports:
+    - port: 5000
+      targetPort: 5000
+      nodePort: 30005
+      name: http
+  selector:
+    app: visitor-counter
+    tier: frontend
+

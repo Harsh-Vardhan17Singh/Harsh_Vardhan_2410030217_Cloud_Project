@@ -1,0 +1,45 @@
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: visitor-counter:latest
+    container_name: visitor-counter-app
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - CLUSTER_NAME=Docker-Compose-Local
+      - APP_ENV=development
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: visitor-counter-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - app-network
+
+volumes:
+  redis_data:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
+
