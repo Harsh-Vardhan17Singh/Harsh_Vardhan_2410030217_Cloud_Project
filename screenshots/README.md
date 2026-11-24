@@ -1,109 +1,29 @@
-# Mandatory Project Screenshots Guide
+# Project Execution Screenshots Catalog
 
-According to the project instructions, you must capture and submit clear screenshots demonstrating each required phase. Use this guide to capture all 6 required screenshots.
+**Student Name:** Harsh Vardhan  
+**Student ID / Roll No:** 2410030217  
+**Repository:** https://github.com/Harsh-Vardhan17Singh/Harsh_Vardhan_2410030217_Cloud_Project  
 
----
-
-### Screenshot 1: Containerized Application Running in Docker
-- **Goal:** Demonstrate that the Flask app and Redis container are up and running via Docker / Docker Compose.
-- **Commands to run:**
-  ```powershell
-  docker compose up -d
-  docker compose ps
-  curl http://localhost:5000
-  ```
-- **What to capture:**
-  - The terminal showing `docker compose ps` with both `visitor-counter-app` and `visitor-counter-redis` with `Up` status and ports `5000->5000` and `6379->6379`.
-  - Browser showing `http://localhost:5000` with the Visitor Counter UI incrementing.
+This directory contains all 15 captured verification screenshots covering every required task of the Cloud Computing Project.
 
 ---
 
-### Screenshot 2: Kubernetes Deployment & Running Pods
-- **Goal:** Demonstrate successful deployment of Deployments, Services, and Persistent Volumes in Kubernetes.
-- **Commands to run:**
-  ```powershell
-  kubectl apply -f k8s.yaml
-  kubectl get all -l app=visitor-counter
-  kubectl get pvc
-  ```
-- **What to capture:**
-  - Terminal displaying:
-    - Pods: `visitor-counter-web-xxxx` (2/2 Running), `redis-deployment-xxxx` (1/1 Running)
-    - Services: `redis-service` (ClusterIP), `visitor-counter-service` (NodePort)
-    - PVC: `redis-pvc` status `Bound`
+## Index of Screenshots
 
----
-
-### Screenshot 3: Kubernetes Self-Healing (Pod Recovery)
-- **Goal:** Demonstrate Kubernetes automated self-healing by deleting a running pod and observing the ReplicaSet automatically launching a replacement pod.
-- **Commands to run:**
-  ```powershell
-  # Check pods
-  kubectl get pods -l app=visitor-counter
-  # Delete one web pod
-  kubectl delete pod <web-pod-name>
-  # Immediately inspect pods
-  kubectl get pods -l app=visitor-counter
-  ```
-- **What to capture:**
-  - Terminal showing the old pod in `Terminating` state and a brand new replacement pod in `ContainerCreating` or `Running` within seconds, maintaining replica count = 2.
-
----
-
-### Screenshot 4: Horizontal Pod Autoscaler (HPA) Scaling Under Load
-- **Goal:** Demonstrate dynamic pod autoscaling when CPU utilization exceeds 50%.
-- **Commands to run:**
-  ```powershell
-  # Enable metrics-server if using Minikube:
-  minikube addons enable metrics-server
-
-  # Apply HPA:
-  kubectl apply -f hpa.yaml
-
-  # Check initial HPA state (replicas = 2):
-  kubectl get hpa visitor-counter-hpa
-
-  # Run load test generator in a separate window:
-  python scripts/load_test.py http://<minikube-ip>:30005/load?duration=3 15 90
-
-  # Observe scaling:
-  kubectl get hpa visitor-counter-hpa -w
-  kubectl get pods -l app=visitor-counter
-  ```
-- **What to capture:**
-  - Terminal displaying HPA TARGETS rising (e.g. `120%/50%`) and REPLICAS scaling out from `2` to `4` or more.
-  - Pod listing showing new scaled replicas in `Running` state.
-
----
-
-### Screenshot 5: Hybrid Cloud Steady State (Traffic Routing to Primary)
-- **Goal:** Demonstrate health-monitored routing to the Primary Cluster (simulated On-Premises).
-- **Commands to run:**
-  ```powershell
-  python hybrid_cloud/failover_router.py
-  # In another terminal:
-  curl http://localhost:8080/healthz
-  ```
-- **What to capture:**
-  - Terminal showing router log: `[PRIMARY] GET /healthz -> Status 200` and response JSON with `"cluster": "Primary-Cluster (On-Premises Data Center)"`.
-  - Browser accessing `http://localhost:8080` showing the Primary Cluster badge.
-
----
-
-### Screenshot 6: Hybrid Cloud Automated Failover to Secondary (Cloud)
-- **Goal:** Demonstrate automatic traffic failover to Secondary Cluster when Primary cluster fails.
-- **Commands to run:**
-  ```powershell
-  # In terminal 2, simulate Primary outage:
-  kubectl scale deployment visitor-counter-web --replicas=0
-
-  # Observe router terminal:
-  # Shows: [FAILOVER EVENT] Primary Cluster UNREACHABLE! --> AUTOMATIC FAILOVER to Secondary
-
-  # Send requests:
-  curl http://localhost:8080/healthz
-  ```
-- **What to capture:**
-  - Terminal showing the router detecting the outage and routing traffic to `SECONDARY (Public Cloud Failover)`.
-  - Browser showing `http://localhost:8080` displaying the Secondary Cluster badge without error (HTTP 200).
-
+| # | Filename | Task Covered | Description |
+|---|:---|:---|:---|
+| 01 | `01_environment_versions.png` | Environment Setup | Verification of Docker 29.5, Compose v5.1, Minikube v1.39, Kubectl v1.37, Python 3.14 |
+| 02 | `02_docker_build.jpg` | Task 1: Containerization | Docker image multi-stage build and export (`visitor-counter:local`) |
+| 03 | `03_docker_compose_up.jpg` | Task 1: Containerization | Docker Compose service startup logs showing Redis and Web healthy |
+| 04 | `04_docker_compose_running.png` | Task 1: Containerization | `docker compose ps` displaying running containers on `127.0.0.1:8080->8000` |
+| 05 | `05_minikube_dual_clusters.png` | Task 2 & 4: Kubernetes Setup | Minikube dual profile verification (`vc-primary` and `vc-backup`) |
+| 06 | `06_k8s_pods_services_pvc.jpg` | Task 2: K8s Deployment | Deployment, StatefulSet, Services, Pods, and PersistentVolumeClaim (`Bound` 1Gi) |
+| 07 | `07_k8s_running_pods.png` | Task 2: Running Pods | Verification of active running pods across Redis and Flask Web |
+| 08 | `08_self_healing_recovery.png` | Task 2: Self-Healing | Pod deletion and automatic recreation: `PASSED self-healing: visitor-xjts8 -> visitor-v5bnq` |
+| 09 | `09_metrics_server_resources.png` | Task 3: HPA Metrics | `metrics-server` pod active and `kubectl top pods` reporting CPU & Memory |
+| 10 | `10_hpa_initial_state.jpg` | Task 3: HPA Baseline | HorizontalPodAutoscaler initial state (`cpu: <unknown>/60%`, 1 replica) |
+| 11 | `11_hpa_load_generation_job.png` | Task 3: Load Testing | Batch load generation job executing 4,864 concurrent requests over 150 seconds |
+| 12 | `12_hpa_scale_up_5_replicas.jpg` | Task 3: HPA Scaling | HPA detecting 500% CPU load and scaling deployment from 1 to 5 replicas |
+| 13 | `13_hpa_scale_down_cooloff.jpg` | Task 3: HPA Scale-Down | HPA stabilization window cooling off, scaling back from 5 down to 1 replica |
+| 14 | `14_hybrid_cloud_contexts.png` | Task 4: Hybrid Cloud | Kubeconfig contexts for `vc-primary` (On-Prem) and `vc-backup` (Simulated Cloud) |
+| 15 | `15_hybrid_failover_success.png` | Task 4: Failover Demonstration | Primary node stopped; automatic failover to `Backup simulated public cloud` (HTTP 200) |

@@ -65,6 +65,11 @@ graph TD
 - **Production Server:** Gunicorn WSGI server configured with 2 workers and 2 threads.
 - **Docker Optimization:** Multi-stage build based on `python:3.11-slim`, stripping all build tools from runtime, creating a dedicated `appuser` non-root account, and minimizing image footprint down to **142 MB**.
 - **Docker Compose:** Created `docker-compose.yml` declaring `web` and `redis` services with bridge network, volume persistence (`redis_data`), and container health checks.
+- **Verification Screenshots:**
+  - `screenshots/01_environment_versions.png` - Host environment tools verification.
+  - `screenshots/02_docker_build.jpg` - Image compilation & packaging (`visitor-counter:local`).
+  - `screenshots/03_docker_compose_up.jpg` - Health-checked service startup.
+  - `screenshots/04_docker_compose_running.png` - Active healthy containers on `127.0.0.1:8080->8000`.
 
 ### Task 2: Kubernetes Deployment
 - **Manifest File:** `k8s.yaml` declaring:
@@ -74,26 +79,39 @@ graph TD
   - `Flask Web Deployment & Service`: Deploys 2 replicas of the Flask application with liveness (`/healthz`) and readiness (`/readyz`) probes.
   - `NodePort Service`: Exposes the application on port `30005`.
 - **Self-Healing Verification:** Tested by terminating a running pod via `kubectl delete pod <pod-name>`. The Kubernetes ReplicaSet controller detected the difference between desired (2) and current (1) state, automatically scheduling and starting a replacement pod in 2.4 seconds with zero loss of visitor count.
+- **Verification Screenshots:**
+  - `screenshots/05_minikube_dual_clusters.png` - Multi-cluster Minikube profiles (`vc-primary`, `vc-backup`).
+  - `screenshots/06_k8s_pods_services_pvc.jpg` - Deployments, StatefulSets, Services, and PVC status (`Bound`).
+  - `screenshots/07_k8s_running_pods.png` - Pod execution status.
+  - `screenshots/08_self_healing_recovery.png` - Pod deletion & recovery: `PASSED self-healing: visitor-xjts8 -> visitor-v5bnq`.
 
 ### Task 3: Horizontal Pod Autoscaler (HPA)
 - **Configuration:** `hpa.yaml` using the `autoscaling/v2` API.
 - **Metrics Rules:**
-  - Scale out when average CPU utilization exceeds **50%**.
-  - Scale out when average Memory utilization exceeds **75%**.
-  - Minimum replicas: **2**, Maximum replicas: **10**.
-  - Stabilization window: 0s for scale-up (fast reaction) and 60s for scale-down (flap prevention).
-- **Testing:** The `/load?duration=3` endpoint was subjected to concurrent requests using `scripts/load_test.py`. CPU spiked to 128%, causing HPA to automatically scale the deployment from 2 to 6 replicas. Once load ceased, HPA gracefully scaled pods down after the stabilization window.
+  - Scale out when average CPU utilization exceeds **60%**.
+  - Minimum replicas: **1**, Maximum replicas: **5**.
+  - Stabilization window: 0s for scale-up (fast reaction) and graceful scale-down (flap prevention).
+- **Testing:** The `/load` endpoint was subjected to concurrent requests using batch job `visitor-load` (4,864 successful requests over 150 seconds). CPU spiked to 500%, causing HPA to automatically scale the deployment from 1 to 5 replicas. Once load ceased, HPA gracefully scaled pods down to 1 replica.
+- **Verification Screenshots:**
+  - `screenshots/09_metrics_server_resources.png` - Metrics-server pod active and `kubectl top` measurements.
+  - `screenshots/10_hpa_initial_state.jpg` - Initial HPA state (1 replica).
+  - `screenshots/11_hpa_load_generation_job.png` - 4,864 concurrent requests load job.
+  - `screenshots/12_hpa_scale_up_5_replicas.jpg` - HPA scale-out to 5 replicas at 500% CPU.
+  - `screenshots/13_hpa_scale_down_cooloff.jpg` - Graceful scale-down after load completion.
 
 ### Task 4: Hybrid Cloud Simulation with Automated Failover
 - **Setup:** Two isolated Kubernetes deployments representing:
-  1. **Primary Cluster (On-Premises):** NodePort 30005.
-  2. **Secondary Cluster (Public Cloud Failover):** NodePort 30006.
-- **Global Failover Router:** `hybrid_cloud/failover_router.py` (and Nginx upstream backup configuration) actively polls `http://primary:30005/healthz` every 2 seconds.
+  1. **Primary Cluster (On-Premises):** Profile `vc-primary` (NodePort 30005).
+  2. **Secondary Cluster (Public Cloud Failover):** Profile `vc-backup` (NodePort 30006).
+- **Global Failover Router:** `hybrid_cloud/failover_router.py` actively polls the primary cluster every 2 seconds.
 - **Failover Demonstration:**
   1. Steady state: 100% of user requests are served by the Primary on-premises cluster.
-  2. Disaster simulation: Primary web deployment scaled to 0 replicas (`kubectl scale deployment visitor-counter-web --replicas=0`).
-  3. Detection & Failover: The router detects HTTP 503/timeout and immediately switches routing to the Secondary Public Cloud cluster with **0 dropped requests**.
+  2. Disaster simulation: Primary node stopped (`node stopped. host: Stopped, kubelet: Stopped, apiserver: Stopped`).
+  3. Detection & Failover: The router detects the primary outage and immediately switches routing to the Secondary Public Cloud cluster (`HTTP 200 | Backup simulated public cloud | count 1, count 2`) with **0 dropped requests**.
   4. Failback: Once the Primary deployment is restored, traffic seamlessly reverts back to on-premises.
+- **Verification Screenshots:**
+  - `screenshots/14_hybrid_cloud_contexts.png` - Dual kubeconfig contexts (`vc-primary` and `vc-backup`).
+  - `screenshots/15_hybrid_failover_success.png` - Automated failover to Backup simulated public cloud with HTTP 200 responses.
 
 ### Task 5: Cost Optimization Analysis (FinOps)
 
