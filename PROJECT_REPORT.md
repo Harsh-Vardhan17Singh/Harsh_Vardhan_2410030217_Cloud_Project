@@ -27,6 +27,8 @@ The primary objective of this project is to architect, containerize, deploy, aut
 
 The following diagram illustrates the end-to-end architecture across Docker, Kubernetes, and the Hybrid Cloud failover system:
 
+![Architecture Diagram](architecture/architecture_diagram.svg)
+
 ```mermaid
 graph TD
     User([End Users / Clients]) -->|HTTP :8080| GTM[Global Traffic Manager / Failover Router]
@@ -65,25 +67,53 @@ graph TD
 - **Production Server:** Gunicorn WSGI server configured with 2 workers and 2 threads.
 - **Docker Optimization:** Multi-stage build based on `python:3.11-slim`, stripping all build tools from runtime, creating a dedicated `appuser` non-root account, and minimizing image footprint down to **142 MB**.
 - **Docker Compose:** Created `docker-compose.yml` declaring `web` and `redis` services with bridge network, volume persistence (`redis_data`), and container health checks.
-- **Verification Screenshots:**
-  - `screenshots/01_environment_versions.png` - Host environment tools verification.
-  - `screenshots/02_docker_build.jpg` - Image compilation & packaging (`visitor-counter:local`).
-  - `screenshots/03_docker_compose_up.jpg` - Health-checked service startup.
-  - `screenshots/04_docker_compose_running.png` - Active healthy containers on `127.0.0.1:8080->8000`.
 
-### Task 2: Kubernetes Deployment
+#### Verification Screenshots:
+##### 1. Host Environment Tools Verification
+Verified Docker 29.5, Compose v5.1, Minikube v1.39, Kubectl v1.37, and Python 3.14 on macOS/Linux/Windows:
+![Host Environment Verification](screenshots/01_environment_versions.png)
+
+##### 2. Multi-Stage Docker Image Build
+Compiling and caching layers to export lightweight `visitor-counter:local`:
+![Docker Image Build](screenshots/02_docker_build.jpg)
+
+##### 3. Docker Compose Service Startup & Health Probes
+Starting containers with automatic health-checking:
+![Docker Compose Startup](screenshots/03_docker_compose_up.jpg)
+
+##### 4. Active Healthy Containers via Docker Compose PS
+Verifying `cloudcomputingproject-redis-1` and `cloudcomputingproject-web-1` (running on `127.0.0.1:8080->8000/tcp`):
+![Docker Compose PS](screenshots/04_docker_compose_running.png)
+
+---
+
+### Task 2: Kubernetes Deployment & Self-Healing
 - **Manifest File:** `k8s.yaml` declaring:
   - `ConfigMap`: Decouples runtime environment variables (`REDIS_HOST`, `REDIS_PORT`, `CLUSTER_NAME`).
   - `PersistentVolumeClaim`: 1Gi storage volume for Redis to ensure persistence across pod restarts.
   - `Redis Deployment & Service`: Deploys Redis backend with internal `ClusterIP` on port 6379.
-  - `Flask Web Deployment & Service`: Deploys 2 replicas of the Flask application with liveness (`/healthz`) and readiness (`/readyz`) probes.
-  - `NodePort Service`: Exposes the application on port `30005`.
-- **Self-Healing Verification:** Tested by terminating a running pod via `kubectl delete pod <pod-name>`. The Kubernetes ReplicaSet controller detected the difference between desired (2) and current (1) state, automatically scheduling and starting a replacement pod in 2.4 seconds with zero loss of visitor count.
-- **Verification Screenshots:**
-  - `screenshots/05_minikube_dual_clusters.png` - Multi-cluster Minikube profiles (`vc-primary`, `vc-backup`).
-  - `screenshots/06_k8s_pods_services_pvc.jpg` - Deployments, StatefulSets, Services, and PVC status (`Bound`).
-  - `screenshots/07_k8s_running_pods.png` - Pod execution status.
-  - `screenshots/08_self_healing_recovery.png` - Pod deletion & recovery: `PASSED self-healing: visitor-xjts8 -> visitor-v5bnq`.
+  - `Flask Web Deployment & Service`: Deploys replicas of the Flask application with liveness (`/healthz`) and readiness (`/readyz`) probes.
+  - `NodePort Service`: Exposes the application on NodePort `30005`.
+- **Self-Healing Verification:** Tested by terminating a running pod via `kubectl delete pod <pod-name>`. The Kubernetes ReplicaSet controller detected the difference between desired (1) and current (0) state, automatically scheduling and starting a replacement pod in 5 seconds with zero loss of visitor count.
+
+#### Verification Screenshots:
+##### 5. Minikube Dual Cluster Setup (`vc-primary` and `vc-backup`)
+Verifying active Minikube profile and node readiness:
+![Minikube Dual Clusters](screenshots/05_minikube_dual_clusters.png)
+
+##### 6. Kubernetes Deployments, StatefulSets, Services, Pods, and PVC
+Verifying `deployment.apps/visitor`, `statefulset.apps/redis`, `redis-service`, `visitor-service`, pods, and `pvc/data-redis-0` (`Bound` 1Gi):
+![Kubernetes Full Deployment](screenshots/06_k8s_pods_services_pvc.jpg)
+
+##### 7. Kubernetes Pod Execution Status
+Verifying active Running status of both Redis and Web pods:
+![Running Pods](screenshots/07_k8s_running_pods.png)
+
+##### 8. Automated Self-Healing in Action
+Demonstrating deletion of pod `visitor-857f7d9864-xjts8` and instant automatic recreation of replacement pod `visitor-857f7d9864-v5bnq` (`PASSED self-healing`):
+![Self-Healing Pod Recovery](screenshots/08_self_healing_recovery.png)
+
+---
 
 ### Task 3: Horizontal Pod Autoscaler (HPA)
 - **Configuration:** `hpa.yaml` using the `autoscaling/v2` API.
@@ -91,13 +121,30 @@ graph TD
   - Scale out when average CPU utilization exceeds **60%**.
   - Minimum replicas: **1**, Maximum replicas: **5**.
   - Stabilization window: 0s for scale-up (fast reaction) and graceful scale-down (flap prevention).
-- **Testing:** The `/load` endpoint was subjected to concurrent requests using batch job `visitor-load` (4,864 successful requests over 150 seconds). CPU spiked to 500%, causing HPA to automatically scale the deployment from 1 to 5 replicas. Once load ceased, HPA gracefully scaled pods down to 1 replica.
-- **Verification Screenshots:**
-  - `screenshots/09_metrics_server_resources.png` - Metrics-server pod active and `kubectl top` measurements.
-  - `screenshots/10_hpa_initial_state.jpg` - Initial HPA state (1 replica).
-  - `screenshots/11_hpa_load_generation_job.png` - 4,864 concurrent requests load job.
-  - `screenshots/12_hpa_scale_up_5_replicas.jpg` - HPA scale-out to 5 replicas at 500% CPU.
-  - `screenshots/13_hpa_scale_down_cooloff.jpg` - Graceful scale-down after load completion.
+- **Testing:** The system was subjected to concurrent requests using batch job `visitor-load` (4,864 successful requests over 150 seconds). CPU spiked to 500%, causing HPA to automatically scale the deployment from 1 to 5 replicas. Once load ceased, HPA gracefully scaled pods back down to 1 replica.
+
+#### Verification Screenshots:
+##### 9. Metrics Server Activation and Pod Resource Measurements
+Metrics server running and `kubectl top pods` measuring CPU cores and memory consumption:
+![Metrics Server and Pod Resources](screenshots/09_metrics_server_resources.png)
+
+##### 10. HorizontalPodAutoscaler Initial State
+HPA target configured at 60% with 1 initial replica:
+![HPA Initial State](screenshots/10_hpa_initial_state.jpg)
+
+##### 11. Batch Load Generation Job
+Job `visitor-load` generating 4,864 successful HTTP requests across 12 concurrent workers:
+![Load Generation Job](screenshots/11_hpa_load_generation_job.png)
+
+##### 12. HPA Elastic Scale-Up to 5 Replicas Under High CPU Load
+CPU spikes to 500%/60% utilization, triggering dynamic scale-out from 1 to 5 replicas:
+![HPA Scale Up 5 Replicas](screenshots/12_hpa_scale_up_5_replicas.jpg)
+
+##### 13. HPA Graceful Scale-Down After Load Completion
+CPU drops to 2%/60% utilization; HPA safely scales replicas back down from 5 to 1:
+![HPA Scale Down Cool-off](screenshots/13_hpa_scale_down_cooloff.jpg)
+
+---
 
 ### Task 4: Hybrid Cloud Simulation with Automated Failover
 - **Setup:** Two isolated Kubernetes deployments representing:
@@ -109,9 +156,17 @@ graph TD
   2. Disaster simulation: Primary node stopped (`node stopped. host: Stopped, kubelet: Stopped, apiserver: Stopped`).
   3. Detection & Failover: The router detects the primary outage and immediately switches routing to the Secondary Public Cloud cluster (`HTTP 200 | Backup simulated public cloud | count 1, count 2`) with **0 dropped requests**.
   4. Failback: Once the Primary deployment is restored, traffic seamlessly reverts back to on-premises.
-- **Verification Screenshots:**
-  - `screenshots/14_hybrid_cloud_contexts.png` - Dual kubeconfig contexts (`vc-primary` and `vc-backup`).
-  - `screenshots/15_hybrid_failover_success.png` - Automated failover to Backup simulated public cloud with HTTP 200 responses.
+
+#### Verification Screenshots:
+##### 14. Hybrid Cloud Kubeconfig Contexts
+Dual isolated clusters `vc-primary` (Primary On-Premises) and `vc-backup` (Simulated Cloud Backup):
+![Hybrid Cloud Contexts](screenshots/14_hybrid_cloud_contexts.png)
+
+##### 15. Automated Disaster Recovery Failover
+Primary cluster node stopped; Global Traffic Manager automatically redirects traffic to the Backup Cloud cluster with continuous HTTP 200 responses:
+![Automated Failover Success](screenshots/15_hybrid_failover_success.png)
+
+---
 
 ### Task 5: Cost Optimization Analysis (FinOps)
 
@@ -155,8 +210,7 @@ All required submission items have been prepared and organized:
   - `k8s.yaml`
   - `hpa.yaml`
 - [x] **Architecture Diagram:** Vector diagram generated at `architecture/architecture_diagram.svg` and embedded above.
-- [x] **Screenshots:** Verification guide prepared at `screenshots/README.md`.
+- [x] **Screenshots:** All 15 verification screenshots embedded directly in Section 3 and cataloged in `screenshots/README.md`.
 - [x] **Cost Analysis Report:** Comprehensive before-and-after analysis at `cost_optimization/cost_analysis_report.md`.
 - [x] **Public GitHub Repository Link:** Recorded in `github_link.txt`.
 - [x] **Team Research Paper Submission:** Uploaded to the assigned Google Drive folder.
-
