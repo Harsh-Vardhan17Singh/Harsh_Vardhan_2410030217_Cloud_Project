@@ -5,7 +5,7 @@
 **GitHub Repository:** https://github.com/Harsh-Vardhan17Singh/Harsh_Vardhan_2410030217_Cloud_Project  
 **Submission Folder:** [Google Drive Submission Folder](https://drive.google.com/drive/folders/1KufvIIZrEiJqsXuI5Fz78rXC87UwD8W_?usp=sharing)  
 
-A complete, production-grade implementation of a containerized Visitor Counter Web Application (Python Flask + Redis) deployed to Kubernetes with Horizontal Pod Autoscaler (HPA v2), simulated Hybrid Cloud disaster recovery failover, and comprehensive FinOps cost optimization analysis.
+
 
 ---
 
